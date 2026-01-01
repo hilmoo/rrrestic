@@ -1,0 +1,8 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  backup:
+    cmds:
+      - restic -r test-local/repo/ backup test-local/target/ --json
