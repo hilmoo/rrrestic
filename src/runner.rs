@@ -1,6 +1,6 @@
 use crate::config::BackupJob;
 use std::process::Command;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 #[derive(serde::Deserialize)]
 pub struct Summary {
@@ -69,6 +69,10 @@ pub fn run_job(job: &BackupJob) {
         Ok(result) => {
             if result.status.success() {
                 let stdout = String::from_utf8_lossy(&result.stdout);
+                for line in stdout.lines() {
+                    debug!("{}", line);
+                }
+
                 let summary_str = stdout.lines().last().unwrap_or("No output");
 
                 let summary: Summary = match serde_json::from_str(summary_str) {
@@ -103,7 +107,11 @@ pub fn run_job(job: &BackupJob) {
                         "Backup successful"
                     );
                 } else {
-                    warn!(job = job.name, "Unexpected message type in summary");
+                    warn!(
+                        job = job.name,
+                        stdout = summary_str,
+                        "Unexpected message type in summary"
+                    );
                 }
                 run_hook_group(&job.after, "after");
                 run_hook_group(&job.success, "success");
