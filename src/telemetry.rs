@@ -21,9 +21,8 @@ pub fn init() {
         .add_directive("reqwest=off".parse().unwrap());
     let otel_layer = layer::OpenTelemetryTracingBridge::new(&logger_provider).with_filter(filter);
 
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .json()
-        .with_filter(EnvFilter::from_default_env());
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    let fmt_layer = tracing_subscriber::fmt::layer().json().with_filter(filter);
 
     tracing_subscriber::registry()
         .with(otel_layer)
