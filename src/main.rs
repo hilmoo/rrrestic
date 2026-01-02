@@ -8,8 +8,9 @@ use tracing::{error, info};
 fn main() -> Result<()> {
     telemetry::init();
 
-    let config_path =
-        std::env::var("RRRESTIC_CONFIG").unwrap_or_else(|_| "rrrestic.toml".to_string());
+    let config_path = config::Config::get_config_path()
+        .to_string_lossy()
+        .to_string();
 
     info!(path = config_path, "Loading configuration");
 

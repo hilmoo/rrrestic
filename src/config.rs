@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, env, path::PathBuf};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -21,6 +21,14 @@ pub struct BackupJob {
 }
 
 impl Config {
+    pub fn get_config_path() -> PathBuf {
+        if let Ok(path) = env::var("RRRESTIC_CONFIG") {
+            return PathBuf::from(path);
+        }
+
+        PathBuf::from("rrrestic.toml")
+    }
+
     pub fn load(path: &str) -> Result<Self> {
         let file_contents = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read config file: {}", path))?;
