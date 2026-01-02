@@ -79,7 +79,26 @@ pub fn run_job(job: &BackupJob) {
                     Ok(s) => s,
                     Err(err) => {
                         error!(job = job.name, error = %err, "Failed to parse backup summary");
-                        return;
+                        Summary {
+                            message_type: "invalid".to_string(),
+                            dry_run: None,
+                            files_new: 0,
+                            files_changed: 0,
+                            files_unmodified: 0,
+                            dirs_new: 0,
+                            dirs_changed: 0,
+                            dirs_unmodified: 0,
+                            data_blobs: 0,
+                            tree_blobs: 0,
+                            data_added: 0,
+                            data_added_packed: 0,
+                            total_files_processed: 0,
+                            total_bytes_processed: 0,
+                            backup_start: chrono::Utc::now(),
+                            backup_end: chrono::Utc::now(),
+                            total_duration: 0.0,
+                            snapshot_id: None,
+                        }
                     }
                 };
 
@@ -118,22 +137,23 @@ pub fn run_job(job: &BackupJob) {
             } else {
                 let stderr = String::from_utf8_lossy(&result.stderr);
                 let err_str = stderr.lines().last().unwrap_or("No output");
-                let error: Error = match serde_json::from_str(err_str) {
-                    Ok(e) => e,
+                match serde_json::from_str::<Error>(err_str) {
+                    Ok(error) => {
+                        error!(
+                            job = job.name,
+                            status = ?result.status,
+                            error_message = %error.error.message.unwrap_or("N/A".to_string()),
+                            error_during= error.during.unwrap_or("N/A".to_string()),
+                            error_item= error.item.unwrap_or("N/A".to_string()),
+                            error_message_type = %error.message_type,
+                            "Backup failed"
+                        );
+                    }
                     Err(err) => {
-                        error!(job = job.name, error = %err, "Failed to parse error message");
-                        return;
+                        error!(job = job.name, error = %err, stderr=err_str, "Failed to parse error message");
                     }
                 };
-                error!(
-                    job = job.name,
-                    status = ?result.status,
-                    error_message = %error.error.message.unwrap_or("N/A".to_string()),
-                    error_during= error.during.unwrap_or("N/A".to_string()),
-                    error_item= error.item.unwrap_or("N/A".to_string()),
-                    error_message_type = %error.message_type,
-                    "Backup failed"
-                );
+
                 run_hook_group(&job.after, "after");
                 run_hook_group(&job.failure, "failure");
             }
