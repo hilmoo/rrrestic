@@ -905,7 +905,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "opentelemetry",
  "opentelemetry-appender-tracing",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
