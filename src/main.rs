@@ -12,12 +12,12 @@ fn main() -> Result<()> {
         .to_string_lossy()
         .to_string();
 
-    info!(path = config_path, "Loading configuration");
+    info!(path = config_path, msg="Loading configuration");
 
     let config = match config::Config::load(&config_path) {
         Ok(c) => c,
         Err(e) => {
-            error!(error = ?e, "Fatal: Could not load config");
+            error!(error = ?e, msg="Fatal: Could not load config");
             std::process::exit(1);
         }
     };

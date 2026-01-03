@@ -46,7 +46,7 @@ pub struct ErrorMessage {
 }
 
 pub fn run_job(job: &BackupJob) {
-    info!(job = job.name, "Starting backup job");
+    info!(job = job.name, msg="Starting backup job");
 
     if let Some(hooks) = &job.before {
         for cmd in hooks {
@@ -78,7 +78,7 @@ pub fn run_job(job: &BackupJob) {
                 let summary: Summary = match serde_json::from_str(summary_str) {
                     Ok(s) => s,
                     Err(err) => {
-                        error!(job = job.name, error = %err, "Failed to parse backup summary");
+                        error!(job = job.name, error = %err, msg="Failed to parse backup summary");
                         Summary {
                             message_type: "invalid".to_string(),
                             dry_run: None,
@@ -123,13 +123,13 @@ pub fn run_job(job: &BackupJob) {
                         summary_backup_end = summary.backup_end.to_rfc3339(),
                         summary_total_duration = summary.total_duration,
                         summary_snapshot_id = ?summary.snapshot_id.unwrap_or("N/A".to_string()),
-                        "Backup successful"
+                        msg="Backup successful"
                     );
                 } else {
                     warn!(
                         job = job.name,
                         stdout = summary_str,
-                        "Unexpected message type in summary"
+                        msg="Unexpected message type in summary"
                     );
                 }
                 run_hook_group(&job.after, "after");
@@ -146,11 +146,11 @@ pub fn run_job(job: &BackupJob) {
                             error_during= error.during.unwrap_or("N/A".to_string()),
                             error_item= error.item.unwrap_or("N/A".to_string()),
                             error_message_type = %error.message_type,
-                            "Backup failed"
+                            msg="Backup failed"
                         );
                     }
                     Err(err) => {
-                        error!(job = job.name, error = %err, stderr=err_str, "Failed to parse error message");
+                        error!(job = job.name, error = %err, stderr=err_str, msg="Failed to parse error message");
                     }
                 };
 
@@ -159,7 +159,7 @@ pub fn run_job(job: &BackupJob) {
             }
         }
         Err(e) => {
-            error!(job = job.name, error = %e, "Failed to spawn restic command");
+            error!(job = job.name, error = %e, msg="Failed to spawn restic command");
             run_hook_group(&job.after, "after");
             run_hook_group(&job.failure, "failure");
         }
@@ -175,15 +175,15 @@ fn run_hook_group(hooks: &Option<Vec<String>>, stage: &str) {
 }
 
 fn run_hook(cmd: &str, stage: &str) {
-    info!(stage = stage, cmd = cmd, "Executing hook");
+    info!(stage = stage, cmd = cmd, msg="Executing hook");
     let output = Command::new("sh").arg("-c").arg(cmd).output();
 
     match output {
         Ok(out) => {
             if !out.status.success() {
-                warn!(stage = stage, cmd = cmd, stderr = %String::from_utf8_lossy(&out.stderr), "Hook failed");
+                warn!(stage = stage, cmd = cmd, stderr = %String::from_utf8_lossy(&out.stderr), msg="Hook failed");
             }
         }
-        Err(e) => error!(stage = stage, cmd = cmd, error = %e, "Failed to execute hook"),
+        Err(e) => error!(stage = stage, cmd = cmd, error = %e, msg="Failed to execute hook"),
     }
 }
