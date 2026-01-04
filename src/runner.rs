@@ -1,5 +1,5 @@
 use crate::config::BackupJob;
-use std::process::Command;
+use std::{collections::HashMap, process::Command};
 use tracing::{debug, error, info, warn};
 
 #[derive(serde::Deserialize)]
@@ -46,11 +46,11 @@ pub struct ErrorMessage {
 }
 
 pub fn run_job(job: &BackupJob) {
-    info!(job = job.name, msg="Starting backup job");
+    info!(job = job.name, msg = "Starting backup job");
 
     if let Some(hooks) = &job.before {
         for cmd in hooks {
-            run_hook(cmd, "before");
+            run_hook(cmd, "before", &job.env);
         }
     }
 
@@ -129,11 +129,11 @@ pub fn run_job(job: &BackupJob) {
                     warn!(
                         job = job.name,
                         stdout = summary_str,
-                        msg="Unexpected message type in summary"
+                        msg = "Unexpected message type in summary"
                     );
                 }
-                run_hook_group(&job.after, "after");
-                run_hook_group(&job.success, "success");
+                run_hook_group(&job.after, "after", &job.env);
+                run_hook_group(&job.success, "success", &job.env);
             } else {
                 let stderr = String::from_utf8_lossy(&result.stderr);
                 let err_str = stderr.lines().last().unwrap_or("No output");
@@ -154,29 +154,35 @@ pub fn run_job(job: &BackupJob) {
                     }
                 };
 
-                run_hook_group(&job.after, "after");
-                run_hook_group(&job.failure, "failure");
+                run_hook_group(&job.after, "after", &job.env);
+                run_hook_group(&job.failure, "failure", &job.env);
             }
         }
         Err(e) => {
             error!(job = job.name, error = %e, msg="Failed to spawn restic command");
-            run_hook_group(&job.after, "after");
-            run_hook_group(&job.failure, "failure");
+            run_hook_group(&job.after, "after", &job.env);
+            run_hook_group(&job.failure, "failure", &job.env);
         }
     }
 }
 
-fn run_hook_group(hooks: &Option<Vec<String>>, stage: &str) {
+fn run_hook_group(hooks: &Option<Vec<String>>, stage: &str, env: &Option<HashMap<String, String>>) {
     if let Some(cmds) = hooks {
         for cmd in cmds {
-            run_hook(cmd, stage);
+            run_hook(cmd, stage, env);
         }
     }
 }
 
-fn run_hook(cmd: &str, stage: &str) {
-    info!(stage = stage, cmd = cmd, msg="Executing hook");
-    let output = Command::new("sh").arg("-c").arg(cmd).output();
+fn run_hook(cmd: &str, stage: &str, env: &Option<HashMap<String, String>>) {
+    info!(stage = stage, cmd = cmd, msg = "Executing hook");
+
+    let mut command = Command::new("sh");
+    command.arg("-c").arg(cmd);
+    if let Some(env_vars) = env {
+        command.envs(env_vars);
+    }
+    let output = command.output();
 
     match output {
         Ok(out) => {
