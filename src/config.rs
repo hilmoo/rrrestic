@@ -10,14 +10,15 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct BackupJob {
     pub name: String,
-    pub repository: String,
     pub source: String,
+    pub extra_args: Option<Vec<String>>,
+
     pub env: Option<HashMap<String, String>>,
+    
     pub before: Option<Vec<String>>,
     pub after: Option<Vec<String>>,
     pub failure: Option<Vec<String>>,
     pub success: Option<Vec<String>>,
-    pub extra_args: Option<Vec<String>>,
 }
 
 impl Config {

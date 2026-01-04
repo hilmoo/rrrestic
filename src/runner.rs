@@ -55,7 +55,7 @@ pub fn run_job(job: &BackupJob) {
     }
 
     let mut command = Command::new("restic");
-    command.args(["-r", &job.repository, "backup", &job.source, "--json"]);
+    command.args(["backup", &job.source, "--json"]);
 
     if let Some(args) = &job.extra_args {
         command.args(args);

@@ -10,17 +10,16 @@ Example configuration:
 ```toml
 [[backup]]
 name = "backup"
-repository = "test-local/repo/"
 source = "test-local/target/"
+extra_args = ["--exclude-larger-than", "1M"]
 
+env.RESTIC_REPOSITORY = "test-local/repo/"
 env.RESTIC_PASSWORD = "${RESTIC_PASSWORD}"
 
 before = ["echo Starting backup job.", "date"]
 after = ["echo Backup job finished.", "date"]
 success = ["echo Backup job completed successfully.", "date"]
 failure = ["echo Backup job failed.", "date"]
-
-extra_args = ["--exclude-larger-than", "1M"]
 ```
 
 ## License
